@@ -182,6 +182,29 @@ class Compiler(ast.NodeVisitor):
 
         self.emit("end\n")
 
+    def visit_Dict(self, node):
+        self.emit("{")
+
+        for i in range(len(node.keys)):
+            self.emit("[")
+            self.visit(node.keys[i])
+            self.emit("] = ")
+            self.visit(node.values[i])
+
+            if i != len(node.keys) - 1:
+                self.emit(", ")
+
+        self.emit("}")
+
+    def visit_Subscript(self, node):
+        self.visit(node.value)
+        self.emit("[")
+        self.visit(node.slice)
+        self.emit("]")
+
+    def visit_Index(self, node):
+        self.visit(node.value)
+
     #someone make this not awful
     def visit_BinOp(self, node):
         if type(node.op) is _ast.Add:
