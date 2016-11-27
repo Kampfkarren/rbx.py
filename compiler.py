@@ -197,6 +197,9 @@ class Compiler(ast.NodeVisitor):
 
         self.emit("end\n")
 
+    def visit_Break(self, node):
+        self.emit("break\n")
+
     def visit_Dict(self, node):
         self.emit("{")
 
@@ -340,7 +343,12 @@ class Compiler(ast.NodeVisitor):
             self.defined[node.name] = "function_{}".format(node.name)
             self.emit("function function_{}(".format(node.name))
         else:
-            self.emit("{}:connect(function(".format(event_list[event]))
+            ev = event_list[event]
+
+            if ev[1] != None:
+                self.include(ev[1])
+
+            self.emit("{}:connect(function(".format(ev[0]))
 
         total_args = []
 
