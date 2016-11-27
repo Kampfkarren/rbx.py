@@ -7,6 +7,26 @@ if sys.version_info[0] < 3:
     sys.exit()
 
 dev = True
+predefined = {}
+predefined["print"] = ["print", None]
+predefined["range"] = ["RBXPY_range", "range"]
+
+class Defined(dict):
+    def __init__(self, compiler, inpt={}):
+        super().__init__(inpt)
+        self.compiler = compiler
+
+    def __getitem__(self, name):
+        if name in predefined:
+            if predefined[name][1] != None:
+                self.compiler.include(predefined[name][1])
+
+            return predefined[name][0]
+        else:
+            return self.__dict__[name]
+
+    def __setitem__(self, key, item):
+        self.__dict__[key] = item
 
 class Translater(ast.NodeVisitor):
     def __init__(self, compiler, basename, only_import=None):
@@ -30,12 +50,10 @@ class Translater(ast.NodeVisitor):
 
 class Compiler(ast.NodeVisitor):
     def __init__(self):
-        self.code = "--This was Python code that was transpiled into Lua by rbx.py. Go to http://github.com/boynedmaster/rbx.py for more information.\n"
+        self.code = ""
         self.libraries_used = []
-        self.defined = {}
+        self.defined = Defined(self)
         self.inanif = 0
-
-        self.defined["print"] = "print"
 
     def generic_visit(self, node):
         if dev:
@@ -140,6 +158,29 @@ class Compiler(ast.NodeVisitor):
 
     def visit_Div(self, node):
         self.emit(" / ")
+
+    def visit_List(self, node):
+        self.emit("{")
+
+        for el in node.elts:
+            self.visit(el)
+
+            if node.elts[-1] != el:
+                self.emit(", ")
+
+        self.emit("}")
+
+    def visit_For(self, node):
+        self.defined[node.target.id] = "forloop_{}".format(node.target.id)
+
+        self.emit("for _,forloop_{} in pairs(".format(node.target.id))
+        self.visit(node.iter)
+        self.emit(") do\n")
+
+        for expr in node.body:
+            self.visit(expr)
+
+        self.emit("end\n")
 
     #someone make this not awful
     def visit_BinOp(self, node):
@@ -282,6 +323,8 @@ class Compiler(ast.NodeVisitor):
 
 compiler = Compiler()
 compiler.visit(ast.parse(open(sys.argv[1]).read()))
+
+compiler.code = "--This was Python code that was transpiled into Lua by rbx.py. Go to http://github.com/boynedmaster/rbx.py for more information.\n" + compiler.code
 
 if dev:
     print(compiler.code)
