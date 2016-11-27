@@ -314,6 +314,10 @@ class Compiler(ast.NodeVisitor):
             translater = Translater(self, node.module, [name.name for name in node.names])
             translater.visit(ast.parse(builtin))
 
+    def visit_Attribute(self, node):
+        self.visit(node.value)
+        self.emit(".{}".format(node.attr))
+
     def visit_NameConstant(self, node):
         if node.value == True:
             self.emit("true")
