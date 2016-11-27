@@ -11,7 +11,7 @@ When a script used this function, and is compiled, rbx.py will interpret it as "
 """
 class translate: #Note: Classes should usually be CamelCase, but because this is used as a decorator, it is lowercase
     def __init__(self, translation):
-        self.translation = translation
+        pass
 
     def __call__(self, original_func):
         def wrapper(*args, **kwargs):
