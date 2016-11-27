@@ -14,13 +14,7 @@ class translate: #Note: Classes should usually be CamelCase, but because this is
         self.translation = translation
 
     def __call__(self, original_func):
-        dec_self = self
-
         def wrapper(*args, **kwargs):
-            return Translation(dec_self.translation)
+            pass
 
         return wrapper
-
-class Translation:
-    def __init__(self, translation):
-        self.translation = translation
