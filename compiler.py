@@ -97,6 +97,16 @@ class Compiler(ast.NodeVisitor):
             self.visit(node.value)
             self.emit("\n")
 
+    def visit_While(self, node):
+        self.emit("while ")
+        self.visit(node.test)
+        self.emit(" do\n")
+
+        for expr in node.body:
+            self.visit(expr)
+
+        self.emit("end\n")
+
     def visit_Str(self, node):
         self.emit("\"{}\"".format(node.s))
 
@@ -197,6 +207,7 @@ class Compiler(ast.NodeVisitor):
         self.emit("}")
 
     def visit_Subscript(self, node):
+        print(vars(node))
         self.visit(node.value)
         self.emit("[")
         self.visit(node.slice)
