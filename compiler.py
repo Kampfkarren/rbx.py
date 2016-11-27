@@ -8,6 +8,16 @@ if sys.version_info[0] < 3:
 
 dev = True
 
+class Translater(ast.NodeVisitor):
+    def __init__(self, compiler, basename):
+        self.compiler = compiler
+        self.basename = basename
+
+    def visit_FunctionDef(self, node):
+        for dec in node.decorator_list:
+            if dec.func.id == "translate":
+                self.compiler.defined["importedbuiltin_{}.{}".format(self.basename, node.name)] = dec.args[0].s
+
 class Compiler(ast.NodeVisitor):
     def __init__(self):
         self.code = "--This was Python code that was transpiled into Lua by rbx.py. Go to http://github.com/boynedmaster/rbx.py for more information.\n"
@@ -35,7 +45,10 @@ class Compiler(ast.NodeVisitor):
         self.emit(self.defined[node.id])
 
     def visit_Call(self, node):
-        self.emit("{}(".format(self.defined[node.func.id]))
+        try:
+            self.emit("{}(".format(self.defined[node.func.id]))
+        except:
+            self.emit("{}(".format(self.defined["importedbuiltin_{}.{}".format(node.func.value.id, node.func.attr)]))
 
         for arg in node.args:
             self.visit(arg)
@@ -63,8 +76,6 @@ class Compiler(ast.NodeVisitor):
         self.emit(str(node.n))
 
     def visit_If(self, node):
-        print(vars(node))
-
         if self.inanif == 0:
             self.emit("\nif ")
         else:
@@ -191,6 +202,17 @@ class Compiler(ast.NodeVisitor):
                     self.emit(" or ")
                 elif dev:
                     print("Bool operator not accounted for {}".format(node.op))
+
+    def visit_Import(self, node):
+        for name in node.names:
+            try:
+                builtin = open("./builtins/{}/__init__.py".format(name.name)).read()
+            except:
+                #TODO: custom imports
+                pass
+            else:
+                translater = Translater(self, name.name)
+                translater.visit(ast.parse(builtin))
 
     def visit_NameConstant(self, node):
         if node.value == True:
