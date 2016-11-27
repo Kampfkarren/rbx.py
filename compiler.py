@@ -1,6 +1,7 @@
 import _ast
 import ast
 import sys
+from libraries.events import event_list
 
 if sys.version_info[0] < 3:
     print("rbx.py won't (and never will) run on Python 2. Use Python 3.")
@@ -15,6 +16,7 @@ class Defined(dict):
     def __init__(self, compiler, inpt={}):
         super().__init__(inpt)
         self.compiler = compiler
+        self.dict = {}
 
     def __getitem__(self, name):
         if name in predefined:
@@ -23,10 +25,13 @@ class Defined(dict):
 
             return predefined[name][0]
         else:
-            return self.__dict__[name]
+            return self.dict[name]
 
     def __setitem__(self, key, item):
-        self.__dict__[key] = item
+        self.dict[key] = item
+
+    def __delitem__(self, key):
+        del self.dict[key]
 
 class Translater(ast.NodeVisitor):
     def __init__(self, compiler, basename, only_import=None):
@@ -320,9 +325,18 @@ class Compiler(ast.NodeVisitor):
             print("Name constant does not have a value: {}".format(node.value))
 
     def visit_FunctionDef(self, node):
-        self.defined[node.name] = "function_{}".format(node.name)
+        event = None
 
-        self.emit("function function_{}(".format(node.name))
+        for dec in node.decorator_list:
+            if dec.value.id == "roblox_events":
+                event = dec.attr
+                break
+
+        if event == None:
+            self.defined[node.name] = "function_{}".format(node.name)
+            self.emit("function function_{}(".format(node.name))
+        else:
+            self.emit("{}:connect(function(".format(event_list[event]))
 
         total_args = []
 
@@ -335,7 +349,7 @@ class Compiler(ast.NodeVisitor):
         for expr in node.body:
             self.visit(expr)
 
-        self.emit("end\n\n")
+        self.emit("end{}\n\n".format(event == None and "" or ")"))
 
         #unset vars
         for arg in node.args.args:
