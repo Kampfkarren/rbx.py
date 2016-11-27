@@ -9,14 +9,24 @@ if sys.version_info[0] < 3:
 dev = True
 
 class Translater(ast.NodeVisitor):
-    def __init__(self, compiler, basename):
+    def __init__(self, compiler, basename, only_import=None):
         self.compiler = compiler
         self.basename = basename
+        self.only_import = only_import
 
     def visit_FunctionDef(self, node):
         for dec in node.decorator_list:
             if dec.func.id == "translate":
-                self.compiler.defined["importedbuiltin_{}.{}".format(self.basename, node.name)] = dec.args[0].s
+                if self.only_import != None and not node.name in self.only_import:
+                    continue
+
+                if len(dec.args) > 1:
+                    self.compiler.include(dec.args[1].s)
+
+                if self.only_import == None:
+                    self.compiler.defined["importedbuiltin_{}.{}".format(self.basename, node.name)] = dec.args[0].s
+                else:
+                    self.compiler.defined[node.name] = dec.args[0].s
 
 class Compiler(ast.NodeVisitor):
     def __init__(self):
@@ -213,6 +223,16 @@ class Compiler(ast.NodeVisitor):
             else:
                 translater = Translater(self, name.name)
                 translater.visit(ast.parse(builtin))
+
+    def visit_ImportFrom(self, node):
+        try:
+            builtin = open("./builtins/{}/__init__.py".format(node.module)).read()
+        except:
+            #TODO: custom imports
+            pass
+        else:
+            translater = Translater(self, node.module, [name.name for name in node.names])
+            translater.visit(ast.parse(builtin))
 
     def visit_NameConstant(self, node):
         if node.value == True:

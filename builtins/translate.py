@@ -7,10 +7,13 @@ i.e.
 def sqrt(*args, **kwargs):
     pass
 
+@translate('function_name', 'include')
+Same as translate with one parameter, but will include an rbx.py library as well.
+
 When a script used this function, and is compiled, rbx.py will interpret it as "math.sqrt"
 """
 class translate: #Note: Classes should usually be CamelCase, but because this is used as a decorator, it is lowercase
-    def __init__(self, translation):
+    def __init__(self, translation, include=None):
         pass
 
     def __call__(self, original_func):
