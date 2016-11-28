@@ -11,6 +11,7 @@ dev = True
 predefined = {}
 predefined["print"] = ["print", None]
 predefined["range"] = ["RBXPY_range", "range"]
+predefined["len"] = ["RBXPY_len", "len"]
 
 class Defined(dict):
     def __init__(self, compiler, inpt={}):
@@ -199,6 +200,9 @@ class Compiler(ast.NodeVisitor):
 
     def visit_Break(self, node):
         self.emit("break\n")
+
+    def visit_Continue(self, node):
+        print("*****rbx.py does not support continue.*****")
 
     def visit_Dict(self, node):
         self.emit("{")
